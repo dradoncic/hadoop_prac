@@ -145,6 +145,12 @@ public class PageRankDriver {
 	static void diff(String input1, String input2, String output, int reducers)
 			throws Exception {
 		System.out.println("Diff Job Part 1 Started");
+		// Clean up any leftover tempdiff directory from previous runs
+		try {
+			deleteDirectory("tempdiff");
+		} catch (Exception e) {
+			// Directory may not exist, ignore
+		}
 		Job job = Job.getInstance(); // Creates a new job
 		job.setJarByClass(PageRankDriver.class); // Sets Driver Class
 		job.setNumReduceTasks(reducers); // Sets number of reducers
@@ -308,19 +314,26 @@ public class PageRankDriver {
 		 * and modify the JoinRankMapper to ignore adjacency lists.  Then modify FinMapper and FinReducer
 		 * to expect the output of join, and sort by page rank.
 		 */
-		if (i % 2 == 1) // As i increments at the last step, for odd i, interim2
-
+		if (i % 2 == 1) // As i increments at the last step, for odd i, interim2 has the latest data
 		{
 			deleteDirectory(interim1);
 			counter++;
-			finish(interim2, output, reducers);
+			// Join the final interim directory with names file, output goes to interim1
+			join(interim2, namesfile, interim1, reducers);
+			counter++;
+			// Finish on joined data
+			finish(interim1, output, reducers);
 			summarizeResult(output);
 		}
-		else
+		else // For even i, interim1 has the latest data
 		{
 			deleteDirectory(interim2);
 			counter++;
-			finish(interim1, output, reducers);
+			// Join the final interim directory with names file, output goes to interim2
+			join(interim1, namesfile, interim2, reducers);
+			counter++;
+			// Finish on joined data
+			finish(interim2, output, reducers);
 			summarizeResult(output);
 		}
 		System.out.println();
